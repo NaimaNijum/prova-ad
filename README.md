@@ -26,10 +26,25 @@ Key workflow:
 - SHAP feature attribution
 - Automatic export of charts and CSV outputs
 
+## Results Summary
+
+The notebook exports two main comparison tables:
+
+- Full track: all features, including the clinical assessment fields that the audit treats as leakage-prone
+- Screening track: the same pipeline without the clinical features
+
+Observed highlights from the exported results:
+
+- Best full-track ROC-AUC is LightGBM at 0.952, with XGBoost close behind at 0.951.
+- CALiBRE-AD reaches 0.950 accuracy, 0.949 ROC-AUC, and a Brier score of 0.046 on the full track.
+- Screening-only performance collapses to near-chance across models, with ROC-AUC values around 0.50.
+- This gap is the core leakage signal the notebook is designed to expose.
+
 ## Repository Files
 
 - [calibre-ad-alzheimers-analysis.ipynb](calibre-ad-alzheimers-analysis.ipynb): End-to-end notebook pipeline
 - [LICENSE](LICENSE): MIT license file
+- [results/](results): Exported CSV outputs from a previous run
 
 ## Runtime Target
 
@@ -77,11 +92,11 @@ If multiple CSV files exist and no clear match is found, set DATASET_PATH manual
 ### CSV Exports
 
 - alzheimers_disease_data_loaded.csv
-- diagnosis_class_balance.csv
 - correlation_matrix.csv
 - target_correlations.csv
 - results_full.csv
 - results_screening.csv
+- ablation_table.csv
 - leakage_audit_data.csv
 - cost_threshold_curve.csv
 - learning_curve_data.csv
@@ -92,7 +107,8 @@ If multiple CSV files exist and no clear match is found, set DATASET_PATH manual
 ## Notes
 
 - The notebook keeps DataFrame feature names in LightGBM evaluation paths to avoid feature-name mismatch warnings.
-- All generated files are written to /kaggle/working/calibre_exports.
+- When run on Kaggle, all generated files are written to /kaggle/working/calibre_exports.
+- The checked-in outputs under results/calibre_exports mirror the notebook exports for local inspection.
 
 ## License
 
