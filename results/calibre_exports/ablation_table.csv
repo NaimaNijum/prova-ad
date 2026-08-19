@@ -1,3 +1,0 @@
-config,accuracy,roc_auc,brier,recall
-+ Heterogeneous stacking (no calibration),0.953,0.949,0.044,0.921
-+ Isotonic calibration (tau=0.5),0.952,0.949,0.046,0.921

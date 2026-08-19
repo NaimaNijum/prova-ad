@@ -1,0 +1,11 @@
+{
+  "alpha_mean": 0.6831731566801535,
+  "alpha_std": 0.44300795344057,
+  "alpha_median": 0.9998065644240679,
+  "frac_clinical_dominated": 0.683573755234993,
+  "alpha_mean_positive_cases": 0.6519938572842744,
+  "alpha_mean_negative_cases": 0.7002331045137521,
+  "alpha_mean_correct": 0.6819555347473583,
+  "alpha_mean_incorrect": 0.7064103902013504,
+  "mean_gate_entropy": 0.06617251379279866
+}

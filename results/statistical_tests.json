@@ -1,0 +1,62 @@
+{
+  "n_bootstrap": 2000,
+  "prova_accuracy_ci95": [
+    0.9404,
+    0.9591
+  ],
+  "prova_roc_auc_ci95": [
+    0.9381,
+    0.9626
+  ],
+  "prova_f1_ci95": [
+    0.9146,
+    0.9422
+  ],
+  "prova_brier_ci95": [
+    0.0393,
+    0.0555
+  ],
+  "prova_mcc_ci95": [
+    0.8689,
+    0.9104
+  ],
+  "mcnemar_vs_Hist. Gradient Boosting": {
+    "b_only_correct": 12,
+    "a_only_correct": 10,
+    "n_discordant": 22,
+    "p_value": 0.8318119049072266
+  },
+  "auc_diff_vs_Hist. Gradient Boosting": {
+    "mean": -0.0017,
+    "ci95": [
+      -0.007,
+      0.0035
+    ]
+  },
+  "mcnemar_vs_Gradient Boosting": {
+    "b_only_correct": 17,
+    "a_only_correct": 20,
+    "n_discordant": 37,
+    "p_value": 0.7428293587290682
+  },
+  "auc_diff_vs_Gradient Boosting": {
+    "mean": 0.0011,
+    "ci95": [
+      -0.0053,
+      0.008
+    ]
+  },
+  "mcnemar_vs_Random Forest": {
+    "b_only_correct": 15,
+    "a_only_correct": 31,
+    "n_discordant": 46,
+    "p_value": 0.02589608179323477
+  },
+  "auc_diff_vs_Random Forest": {
+    "mean": 0.0001,
+    "ci95": [
+      -0.0055,
+      0.0059
+    ]
+  }
+}
