@@ -1,181 +1,139 @@
 # PROVA-AD
 
-**A Provenance-Gated Dual-Stream Network with a Differentiable Cost-Calibrated
-Decision Head for Leakage-Audited Alzheimer's Disease Classification**
+**Provenance-gated dual-stream classification with a differentiable,
+cost-calibrated decision head for Alzheimer's disease benchmarks.**
 
-![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Jupyter](https://img.shields.io/badge/Jupyter-F37626?style=for-the-badge&logo=jupyter&logoColor=white)
-![NumPy](https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white)
-![pandas](https://img.shields.io/badge/pandas-150458?style=for-the-badge&logo=pandas&logoColor=white)
-![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?style=for-the-badge&logo=scikitlearn&logoColor=white)
-![SciPy](https://img.shields.io/badge/SciPy-8CAAE6?style=for-the-badge&logo=scipy&logoColor=white)
-![Matplotlib](https://img.shields.io/badge/Matplotlib-11557C?style=for-the-badge&logo=plotly&logoColor=white)
-
-MD. BAKIKIBILLAH · NAIMA NAJAM NEJUM
+MD. Bakibillah Rahat · Naima Najam Nejum
 Department of Computer Science, American International University-Bangladesh
 
-**`PROVA-AD.ipynb` is the entire project**: one self-contained notebook that
-defines the architecture from scratch, runs every experiment, and produces
-every table and figure below, with all outputs already executed and stored in
-`results/` and `figures/`. It has no project imports — only NumPy, pandas,
-scikit-learn, SciPy and Matplotlib — so it runs unchanged on Kaggle, Colab, or
-a local kernel.
+![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)
+![Jupyter](https://img.shields.io/badge/Jupyter-F37626?logo=jupyter&logoColor=white)
+![NumPy](https://img.shields.io/badge/NumPy-013243?logo=numpy&logoColor=white)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?logo=scikitlearn&logoColor=white)
 
----
+This repository is organized around one executable artifact, [`prova-ad.ipynb`](prova-ad.ipynb). The notebook contains the model implementation, evaluation protocol, baselines, statistical analysis, ablations, robustness checks, and figure generation. The `results/` and `figures/` directories contain exported outputs from the reported run.
 
-## What the model is
+## Study at a glance
 
-Tabular AD benchmarks report 95 %+ accuracy that comes almost entirely from ten
-clinician-administered assessment items — instruments produced *by* the
-diagnostic work-up the model is supposed to predict. No conventional
-architecture can report how much of a given prediction rested on those items,
-because a flat feature vector carries no record of where each feature came from.
+The dataset contains 2,149 records and 32 predictors. Ten clinical assessment variables are separated from 22 pre-assessment screening variables so that the model can measure how much its predictions depend on information produced by the diagnostic work-up itself.
 
-PROVA-AD makes provenance a first-class architectural object, in three stages:
+The notebook evaluates two tracks:
 
-**Stage 1 — Provenance-Partitioned Stream Encoder.** Three parallel banks of
-K = 4 heterogeneous learners (boosted trees, extra trees, RBF-SVM, logistic) are
-fitted on the screening stream `x_s ∈ ℝ²²`, the clinical stream `x_c ∈ ℝ¹⁰`, and
-their union. The meta-features handed downstream are *provenance-indexed*.
+- **Full track:** all 32 predictors are available.
+- **Screening track:** only the 22 screening predictors are available.
 
-**Stage 2 — Provenance Gate and Cross-Stream Fusion.** A small gate that sees
-screening features only emits a per-patient reliance coefficient
-`α(x) ∈ (0,1)` and fuses the two stream-evidence logits:
+The dataset is synthetic. Results are methodological and comparative; this project is not a clinical diagnostic tool.
 
-```
-ℓ = α·e_c + (1−α)·e_s + vᵀz̃ + b₀
-```
+## Architecture
 
-`α` is directly readable as *the share of this patient's decision evidence that
-came from clinician-administered items* — a per-prediction leakage audit,
-available at inference time without labels. A gate-entropy regulariser keeps
-routing crisp (measured mean entropy 0.066 nats out of a maximum 0.693).
+### 1. Provenance-partitioned encoder
 
-**Stage 3 — Differentiable Cost-Calibrated Decision Head.** A monotone
-piecewise-linear spline `Γ_θ` (non-decreasing by construction via softplus
-increments) is trained *jointly* with a proper scoring rule, a soft-binned
-calibration penalty, and a smoothed clinical decision cost — replacing post-hoc
-isotonic regression. Because the output probabilities are calibrated, the
-cost-optimal operating point follows in closed form:
+Three banks of four heterogeneous scikit-learn learners are trained on:
 
-```
-τ* = c_FP / (c_FP + c_FN)        (= 1/6 for the 5:1 clinical cost used here)
+1. the screening stream,
+2. the clinical stream, and
+3. the union of both streams.
+
+Their out-of-fold predictions become provenance-indexed meta-features for the custom head.
+
+### 2. Provenance gate and fusion
+
+A 16-unit NumPy gate receives screening features and stream-level evidence summaries. It outputs a patient-specific reliance value `alpha` and fuses clinical and screening evidence:
+
+```text
+ell = alpha * e_c + (1 - alpha) * e_s + v.T @ z_tilde + b_0
 ```
 
-so no labelled threshold-tuning set is needed. All gradients are hand-derived
-and verified against central finite differences to `1.6e-10`.
+The gate does not receive raw clinical features, preserving the interpretation of `alpha` as a provenance-reliance signal. A gate-entropy penalty encourages decisive routing.
 
----
+### 3. Differentiable decision head
 
-## Headline results
+A 16-knot monotone spline calibrates the fused logit. It is trained in NumPy with a proper scoring term, soft calibration penalty, smoothed decision-cost term, entropy regularization, and L2 regularization. The analytic gradients are checked against central finite differences.
 
-| | PROVA-AD | next-best on that metric | strongest classifier (Hist. GB) |
-|---|---|---|---|
-| Accuracy (Full track, τ=0.5) | 0.950 | — | **0.951** |
-| ROC-AUC | 0.951 | — | **0.952** |
-| **Expected calibration error** | **0.015** | 0.028 (Logistic Reg.) | 0.034 |
-| Clinical cost `5·FN + 1·FP` | **339** | 358 (Gradient Boosting) | 365 |
-| Screening track ROC-AUC | 0.511 | 0.530 (Logistic Reg.) | 0.494 |
+For false-negative cost `c_FN = 5` and false-positive cost `c_FP = 1`, the calibrated operating point is:
 
-- Accuracy is a **tie** with the boosting baselines (McNemar p = 0.83 and 0.74);
-  significantly better than Random Forest (p = 0.026). We do not claim an
-  accuracy improvement.
-- Calibration error is the lowest of any model tested: **1.9× below the
-  next-best** (logistic regression — a weak classifier, so this is the least
-  flattering comparison available), **2.3× below the strongest classifier**, and
-  10.8× below Random Forest. This is where the architecture pays off.
-- Withholding the ten assessment features collapses **every** model, including
-  ours, to chance — the central negative result of the paper.
-- Under distribution shift the closed-form τ* lands within **2.6 %** of the
-  unavailable target oracle cost, while a threshold grid-searched on the source
-  stratum exceeds it by **365 %**.
-
-All eleven baselines, PROVA-AD, and every derived statistic above are recomputed
-fresh each time the notebook runs — nothing in this table is hand-entered.
-
----
-
-## Layout
-
-```
-PROVA-AD.ipynb   <- the whole study: architecture, experiments, tables, figures
-data/
-  data_alzheimers.csv   the 2,149-record cohort
-figures/            every figure the notebook produces, vector PDF + PNG
-results/            every exported table and JSON summary, as produced by the run
-LICENSE
-README.md
+```text
+tau* = c_FP / (c_FP + c_FN) = 1/6
 ```
 
-## Notebook map
+## Current results
 
-| § | Produces |
+All values below are from the committed CSV/JSON exports in `results/`.
+
+| Metric | PROVA-AD | Best or reference result |
+|---|---:|---:|
+| Full-track accuracy at `tau = 0.5` | 0.9507 | 0.9511, Hist. Gradient Boosting |
+| Full-track ROC-AUC | 0.9507 | 0.9525, Hist. Gradient Boosting |
+| Full-track ECE | **0.0149** | 0.0343, Hist. Gradient Boosting |
+| Full-track cost, `5*FN + FP` | **338** | 358, Gradient Boosting |
+| Screening-track ROC-AUC | 0.5107 | 0.5300, Logistic Regression |
+
+The screening track is near chance for every model, showing that the high full-track performance is driven by the ten clinical assessment variables. PROVA-AD's full-track accuracy is statistically comparable to Hist. Gradient Boosting (McNemar `p = 1.0`); the project does not claim an accuracy improvement.
+
+Additional measured facts:
+
+- 95% bootstrap CI for PROVA-AD accuracy: `0.9409` to `0.9595`.
+- 95% bootstrap CI for ROC-AUC: `0.9382` to `0.9626`.
+- Mean gate output: `alpha = 0.6828`; mean gate entropy: `0.0652` nats.
+- 462 trainable head parameters; 0.422 ms per record during the measured CPU inference run.
+- The empirical source-cohort cost minimum is 338 at threshold 0.385. The closed-form `tau*` cost is 359, 6.2% higher on that cohort.
+
+## Repository layout
+
+```text
+prova-ad/
+├── prova-ad.ipynb                 # complete implementation and experiments
+├── data/
+│   └── data_alzheimers.csv        # 2,149-record input cohort
+├── figures/                       # 14 figures, each as PDF and PNG
+├── results/                       # exported tables and JSON summaries
+├── LICENSE                        # repository code licence
+└── README.md
+```
+
+### Important result files
+
+| File | Contents |
 |---|---|
-| 0 | seed, versions, global configuration |
-| 1 | cohort loading, provenance partition, target correlations |
-| 2 | Stage 1 — the three heterogeneous learner banks |
-| 3 | Stages 2–3 — the novel head, in NumPy with analytic gradients (finite-difference check) |
-| 4 | `ProvaAD` estimator + nested 5×5-fold out-of-fold evaluation |
-| 5 | metrics, ECE, bootstrap CIs, exact McNemar, cost curve |
-| 6 | eleven reference baseline classifiers under the identical protocol |
-| 7–8 | full-track and screening-track result tables, leakage audit |
-| 9–10 | PROVA-AD main result + screening-only collapse |
-| 11–12 | confidence intervals, McNemar tests, closed-form threshold check |
-| 13 | provenance-gate reliance analysis (per-patient α) |
-| 14 | ablation: cumulative build-up + leave-one-component-out |
-| 15–17 | learning curve, domain shift, permutation attribution |
-| 18–19 | model complexity, optional external-cohort validation hook |
-| 20 | every figure saved to `figures/` |
+| [`table_full_track.csv`](results/table_full_track.csv) | Full-track metrics for PROVA-AD and 11 baselines |
+| [`table_screening_track.csv`](results/table_screening_track.csv) | Screening-only metrics |
+| [`prova_operating_points.csv`](results/prova_operating_points.csv) | PROVA-AD metrics at `0.5` and `tau*` |
+| [`leakage_audit.csv`](results/leakage_audit.csv) | Full-versus-screening AUC decrement for every model |
+| [`gate_analysis.json`](results/gate_analysis.json) | Per-patient gate reliance summary |
+| [`threshold_analysis.json`](results/threshold_analysis.json) | Empirical and closed-form threshold comparison |
+| [`domain_shift.csv`](results/domain_shift.csv) | Age, education, and BMI source-to-target shifts |
+| [`complexity.json`](results/complexity.json) | Parameter count and timing measurements |
 
----
+Figures include architecture schematics, class distribution, feature correlations, leakage, calibration, cost curves, ROC/PR curves, confusion matrix, gate reliance, permutation importance, learning curves, ablations, and domain-shift analysis.
 
-## Reproducing
+## Reproduce the results
 
-Open `PROVA-AD.ipynb` and run all cells — roughly 40 minutes, CPU only. On
-Kaggle, attach the dataset `rabieelkharoua/alzheimers-disease-dataset` and the
-path is resolved automatically; locally, keep `data_alzheimers.csv` under
-`data/` next to the notebook. Every table in `results/` and every figure in
-`figures/` is regenerated in place.
+Requirements: Python 3.10 or newer, Jupyter, NumPy, pandas, SciPy, scikit-learn, and Matplotlib. No GPU or deep-learning framework is required.
 
-### Requirements
+1. Open [`prova-ad.ipynb`](prova-ad.ipynb) in Jupyter or VS Code.
+2. Run the cells from top to bottom. The configured seed is `42`; the evaluation uses nested 5-fold cross-validation and 2,000 bootstrap resamples.
+3. Confirm that `data/data_alzheimers.csv` is available beside the notebook.
 
-Python ≥ 3.10, NumPy, pandas, scikit-learn, SciPy, Matplotlib. No GPU, no
-deep-learning framework: the decision head is implemented directly in NumPy
-with hand-derived gradients.
+The notebook resolves the project root automatically, creates `results/` and `figures/` when needed, and overwrites exported artifacts during a fresh run. The full run is CPU-only and takes approximately 40 minutes on the reference setup.
 
----
+## Feature partition
 
-## Running an external cohort
+The clinical stream is:
 
-The notebook's Section IX names the absence of an independently collected
-external cohort as its main limitation. A hook is wired up in the
-"External cohort validation" cell near the end of the notebook: set
-`EXTERNAL_CSV` to the path of a second CSV before running that cell.
-
-```python
-EXTERNAL_CSV = "data_external.csv"   # e.g. an OASIS export
+```text
+MMSE, FunctionalAssessment, ADL, MemoryComplaints,
+BehavioralProblems, Confusion, Disorientation, PersonalityChanges,
+DifficultyCompletingTasks, Forgetfulness
 ```
 
-The external CSV needs a binary `Diagnosis` column and any overlapping subset of
-the primary cohort's column names; columns present in only one cohort are
-dropped from both so the feature spaces align exactly. Features named in the
-notebook's clinical-feature list are routed to the clinical stream, everything
-else to the screening stream.
+The screening stream contains the remaining 22 predictors, including age, demographics, lifestyle, family history, comorbidities, blood pressure, and cholesterol measurements. `PatientID` and `DoctorInCharge` are excluded, and `Diagnosis` is the binary target.
 
----
+## External cohort hook
 
-## Data
+The notebook includes an optional external-validation cell. Set `EXTERNAL_CSV` to a second CSV with a binary `Diagnosis` column before running that cell. Shared columns are aligned automatically; clinical-feature names use the same partition above, and non-overlapping columns are dropped.
 
-Alzheimer's Disease dataset by R. El Kharoua, hosted on Kaggle
-(<https://www.kaggle.com/datasets/rabieelkharoua/alzheimers-disease-dataset>),
-2,149 records, CC-BY 4.0. The copy in this repository is the same file used for
-every reported result.
+Independent external validation is not included in the current results and remains a primary limitation.
 
-**The dataset is synthetic.** The paper's claims are methodological and
-comparative; nothing here is a clinical tool or a diagnostic claim.
+## Data and licence
 
----
-
-## Licence
-
-Code released under the MIT licence. Dataset under CC-BY 4.0.
+The cohort is the Alzheimer's Disease dataset by R. El Kharoua, hosted on [Kaggle](https://www.kaggle.com/datasets/rabieelkharoua/alzheimers-disease-dataset), licensed under CC-BY 4.0. Repository code is released under the MIT licence; see [`LICENSE`](LICENSE).
