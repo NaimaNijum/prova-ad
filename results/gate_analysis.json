@@ -1,11 +1,11 @@
 {
-  "alpha_mean": 0.6831731566801535,
-  "alpha_std": 0.44300795344057,
-  "alpha_median": 0.9998065644240679,
-  "frac_clinical_dominated": 0.683573755234993,
-  "alpha_mean_positive_cases": 0.6519938572842744,
-  "alpha_mean_negative_cases": 0.7002331045137521,
-  "alpha_mean_correct": 0.6819555347473583,
-  "alpha_mean_incorrect": 0.7064103902013504,
-  "mean_gate_entropy": 0.06617251379279866
+  "alpha_mean": 0.6828252012057318,
+  "alpha_std": 0.4434896079953171,
+  "alpha_median": 0.9997709398850987,
+  "frac_clinical_dominated": 0.6821777570963239,
+  "alpha_mean_positive_cases": 0.6523621100712216,
+  "alpha_mean_negative_cases": 0.6994932712289339,
+  "alpha_mean_correct": 0.6814987709787557,
+  "alpha_mean_incorrect": 0.7083902668067916,
+  "mean_gate_entropy": 0.06522717273717482
 }

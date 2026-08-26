@@ -1,8 +1,8 @@
 {
-  "empirical_argmin_threshold": 0.42,
-  "empirical_min_cost": 336.0,
+  "empirical_argmin_threshold": 0.385,
+  "empirical_min_cost": 338.0,
   "closed_form_tau_star": 0.16666666666666666,
   "cost_at_tau_star": 359.0,
-  "cost_at_0.5": 339.0,
-  "excess_cost_of_closed_form_pct": 6.845
+  "cost_at_0.5": 338.0,
+  "excess_cost_of_closed_form_pct": 6.213
 }

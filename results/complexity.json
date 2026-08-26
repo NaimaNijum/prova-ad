@@ -3,7 +3,7 @@
   "gate_hidden_units": 16,
   "spline_knots": 16,
   "base_learners_total": 12,
-  "fit_seconds_full_data": 29.06,
-  "inference_seconds_2149_records": 0.828,
-  "inference_ms_per_record": 0.386
+  "fit_seconds_full_data": 38.0,
+  "inference_seconds_2149_records": 0.908,
+  "inference_ms_per_record": 0.422
 }
